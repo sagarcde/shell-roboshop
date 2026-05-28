@@ -1,17 +1,17 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 LOG_FILE="/tmp/roboshop.log"
 
 log() {
-  echo -e "\e[32m[$(date)] $1\e[0m"
-  echo "[$(date)] $1" >> $LOG_FILE
+  echo -e "\e[32m[$(date '+%F %T')] $1\e[0m"
+  echo "[$(date '+%F %T')] $1" >> ${LOG_FILE}
 }
 
 error() {
-  echo -e "\e[31m[$(date)] ERROR: $1\e[0m"
-  echo "[$(date)] ERROR: $1" >> $LOG_FILE
+  echo -e "\e[31m[$(date '+%F %T')] ERROR: $1\e[0m"
+  echo "[$(date '+%F %T')] ERROR: $1" >> ${LOG_FILE}
 }
 
 validate() {

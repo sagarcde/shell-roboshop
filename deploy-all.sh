@@ -1,19 +1,17 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 PASSWORD="DevOps321"
 REMOTE_USER="ec2-user"
 
-SCRIPT_DIR=$(cd $(dirname $0); pwd)
+SCRIPT_DIR=$(cd $(dirname "$0") && pwd)
 
 source ${SCRIPT_DIR}/common.sh
 
-dnf install -y sshpass jq awscli >/dev/null 2>&1
-
-if [ ! -f ~/.ssh/id_rsa ]; then
-  ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
-fi
+log "Installing required tools"
+dnf install -y sshpass jq unzip awscli >/dev/null 2>&1
+validate $? "INSTALL TOOLS"
 
 declare -A HOSTS=(
   [catalogue]="catalog.sagar90s.online"
@@ -28,22 +26,11 @@ declare -A HOSTS=(
 )
 
 DISPATCH_IP=$(aws ec2 describe-instances \
---instance-ids i-09cc18ef27c7d5216 \
---query 'Reservations[0].Instances[0].PrivateIpAddress' \
---output text)
+  --instance-ids i-09cc18ef27c7d5216 \
+  --query 'Reservations[0].Instances[0].PrivateIpAddress' \
+  --output text)
 
 HOSTS[dispatch]=$DISPATCH_IP
-
-copy_ssh_key() {
-
-  HOST=$1
-
-  sshpass -p "$PASSWORD" ssh-copy-id \
-  -o StrictHostKeyChecking=no \
-  ${REMOTE_USER}@${HOST}
-
-  validate $? "SSH KEY COPY TO ${HOST}"
-}
 
 deploy_component() {
 
@@ -52,24 +39,20 @@ deploy_component() {
 
   log "Deploying ${COMPONENT} on ${HOST}"
 
-  scp -o StrictHostKeyChecking=no \
-  ${SCRIPT_DIR}/common.sh \
-  ${SCRIPT_DIR}/setup-${COMPONENT}.sh \
-  ${REMOTE_USER}@${HOST}:/tmp/
+  sshpass -p "${PASSWORD}" scp -o StrictHostKeyChecking=no \
+    ${SCRIPT_DIR}/common.sh \
+    ${SCRIPT_DIR}/setup-${COMPONENT}.sh \
+    ${REMOTE_USER}@${HOST}:/tmp/
 
   validate $? "COPY ${COMPONENT}"
 
-  ssh -o StrictHostKeyChecking=no \
-  ${REMOTE_USER}@${HOST} \
-  "chmod +x /tmp/setup-${COMPONENT}.sh && sudo bash /tmp/setup-${COMPONENT}.sh"
+  sshpass -p "${PASSWORD}" ssh -tt \
+    -o StrictHostKeyChecking=no \
+    ${REMOTE_USER}@${HOST} \
+    "echo '${PASSWORD}' | sudo -S bash /tmp/setup-${COMPONENT}.sh"
 
   validate $? "DEPLOY ${COMPONENT}"
 }
-
-for COMPONENT in "${!HOSTS[@]}"
-do
-  copy_ssh_key ${HOSTS[$COMPONENT]}
-done
 
 DEPLOY_ORDER=(
   mongodb
@@ -89,9 +72,12 @@ do
   deploy_component ${COMPONENT} ${HOSTS[$COMPONENT]}
 done
 
-chmod +x setup-frontend.sh
-sudo bash setup-frontend.sh
+log "Deploying frontend locally"
+
+chmod +x ${SCRIPT_DIR}/setup-frontend.sh
+
+echo "${PASSWORD}" | sudo -S bash ${SCRIPT_DIR}/setup-frontend.sh
 
 validate $? "FRONTEND DEPLOYMENT"
 
-log "ROBOSHOP DEPLOYMENT COMPLETED"
+log "ROBOSHOP DEPLOYMENT COMPLETED SUCCESSFULLY"
