@@ -71,7 +71,7 @@ fi
 
 if [[ -z "${DISPATCH_PRIVATE_IP}" ]]; then
   log_warn "DISPATCH_PRIVATE_IP is not set. Please set it manually:"
-  log_warn "  export DISPATCH_PRIVATE_IP=172.31.12.105"
+  log_warn "  export DISPATCH_PRIVATE_IP=<private-ip-of-dispatch-ec2>"
   log_warn "  Then re-run this script."
   exit 1
 fi
