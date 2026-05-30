@@ -18,7 +18,7 @@ VPC_ID="vpc-06f14609690a23709"
 AMI_ID="ami-0220d79f3f480ecf5"
 INSTANCE_TYPE="t3.micro"
 SUBNET_ID="subnet-04a504e7b57258a53"
-MY_IP="49.204.27.142"
+MY_IP="49.204.26.231"
 
 # SSH Access (no key pair — AMI has pre-configured credentials)
 # Username : ec2-user
